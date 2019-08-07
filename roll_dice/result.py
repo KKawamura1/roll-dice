@@ -27,15 +27,18 @@ class Result:
                 fumble = (96 <= dice[0] <= 100)
             else:
                 critical = fumble = False
+            sum_value = sum(dice) + self.bias
             critical_str = '(Critical!) ' if critical else ''
             fumble_str = '(Fumble!) ' if fumble else ''
-            sum_value = sum(dice) + self.bias
-            result = f'{sum_value} {critical_str}{fumble_str}({str(dice)} + {self.bias})'
+            bias_str = f' + {self.bias}' if self.bias != 0 else ''
+            result = f'{sum_value} {critical_str}{fumble_str}({str(dice)}{bias_str})'
         else:
             sum_value = sum([sum(dice) for dice_kind, dice in self.dice_list])
             result_for_each_kind = [
                 f'({len(dice)}d{dice_kind}: {str(dice)})'
                 for dice_kind, dice in self.dice_list
             ]
-            result = f'{sum_value} {" ".join(result_for_each_kind)} (bias: {self.bias})'
-        return f'Result: {result}'
+            if self.bias != 0:
+                result_for_each_kind.append(f'(bias: {self.bias})')
+            result = f'{sum_value} {" ".join(result_for_each_kind)}'
+        return result

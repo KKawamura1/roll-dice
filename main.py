@@ -14,11 +14,14 @@ def main() -> None:
         except EOFError:
             break
         try:
-            result = Query.parse_as_query(line).roll()
+            query = Query.parse_as_query(line)
         except DiceQueryError:
             print(traceback.format_exc())
             continue
-        print(str(result))
+        print(f'Query: {query}')
+        result = query.roll()
+        print(f'Result: {result}')
+        print()
 
 
 if __name__ == "__main__":

@@ -32,6 +32,21 @@ class Query:
         }
         return Result(dice_map=dice_map, bias=self._bias)
 
+    def __str__(self) -> str:
+        dice_num_list = sorted(
+            [
+                (dice_kind, dice_num)
+                for dice_kind, dice_num in self._dice_num_map.items()
+            ]
+        )
+        dice_num_str_list = [
+            f"{dice_num}d{dice_kind}"
+            for dice_kind, dice_num in dice_num_list
+        ]
+        if not(self._bias == 0 and len(dice_num_str_list) > 0):
+            dice_num_str_list.append(str(self._bias))
+        return ' + '.join(dice_num_str_list)
+
     @staticmethod
     def parse_as_query(text: str) -> 'Query':
         dice_num_map = defaultdict(int)
