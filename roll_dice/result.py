@@ -1,18 +1,41 @@
-from typing import Sequence
+from typing import Sequence, Mapping
 
 
 class Result:
-    def __init__(self, dice: Sequence[int], bias: int) -> None:
-        dice = sorted(list(dice), reverse=True)
-        self.dice = dice
+    def __init__(self, dice_map: Mapping[int, Sequence[int]], bias: int) -> None:
+        dice_list = sorted(
+            [
+                (dice_kind, sorted(list(dice), reverse=True))
+                for dice_kind, dice in dice_map.items()
+            ],
+            reverse=False
+        )
+        self.dice_list = dice_list
         self.bias = bias
 
-        dice_num = len(dice)
-        self.critical = (dice_num >= 2 and dice[1] == 6)
-        self.fumble = (dice_num == 0 or all([die == 1 for die in dice]))
-        self.sum_value = sum(dice) + bias
-    
     def __str__(self) -> str:
-        critical_str = '(Critical!) ' if self.critical else ''
-        fumble_str = '(Fumble!) ' if self.fumble else ''
-        return f'Result: {self.sum_value} {critical_str}{fumble_str}({str(self.dice)} + {self.bias})'
+        if len(self.dice_list) == 0:
+            result = str(self.bias)
+        elif len(self.dice_list) == 1:
+            dice_kind, dice = self.dice_list[0]
+            dice_num = len(dice)
+            if dice_kind == 6:
+                critical = (dice_num >= 2 and dice[1] == 6)
+                fumble = all([die == 1 for die in dice])
+            elif dice_kind == 100 and dice_num == 1:
+                critical = (1 <= dice[0] <= 5)
+                fumble = (96 <= dice[0] <= 100)
+            else:
+                critical = fumble = False
+            critical_str = '(Critical!) ' if critical else ''
+            fumble_str = '(Fumble!) ' if fumble else ''
+            sum_value = sum(dice) + self.bias
+            result = f'{sum_value} {critical_str}{fumble_str}({str(dice)} + {self.bias})'
+        else:
+            sum_value = sum([sum(dice) for dice_kind, dice in self.dice_list])
+            result_for_each_kind = [
+                f'({len(dice)}d{dice_kind}: {str(dice)})'
+                for dice_kind, dice in self.dice_list
+            ]
+            result = f'{sum_value} {" ".join(result_for_each_kind)} (bias: {self.bias})'
+        return f'Result: {result}'

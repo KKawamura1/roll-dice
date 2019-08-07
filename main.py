@@ -1,4 +1,7 @@
+import traceback
+
 from roll_dice.query import Query
+from roll_dice.errors import DiceQueryError
 
 
 def main() -> None:
@@ -10,7 +13,11 @@ def main() -> None:
             line = input('Input: ')
         except EOFError:
             break
-        result = Query.parse_as_query(line).roll()
+        try:
+            result = Query.parse_as_query(line).roll()
+        except DiceQueryError:
+            print(traceback.format_exc())
+            continue
         print(str(result))
 
 
