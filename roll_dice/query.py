@@ -1,14 +1,16 @@
-from typing import Mapping, Optional
+from typing import Mapping, Optional, Tuple
 import re
 from collections import defaultdict
 import numpy as np
+from colorama import Fore
 
+from roll_dice.colorama import Colorama
 from roll_dice.result import Result
 from roll_dice.errors import DiceQueryError
 
 
 simple_query_regex = re.compile(
-    r'(?P<posneg>[\+-])\s*(?P<value>[0-9]+)?(?P<d>[dD])?(?P<dice_kind>[0-9]+)?'
+    r'(?P<posneg>[\+-])?\s*(?P<value>[0-9]+)?(?P<d>[dD])?(?P<dice_kind>[0-9]+)?'
 )
 
 
@@ -19,7 +21,11 @@ def str_to_int_with_default(target: Optional[str], default: int) -> int:
 
 
 class Query:
-    def __init__(self, dice_num_map: Mapping[int, int], bias: int) -> None:
+    def __init__(
+            self,
+            dice_num_map: Mapping[int, int],
+            bias: int,
+    ) -> None:
         self._dice_num_map = dice_num_map
         self._bias = bias
 
@@ -48,22 +54,54 @@ class Query:
         return ' + '.join(dice_num_str_list)
 
     @staticmethod
-    def parse_as_query(text: str) -> 'Query':
+    def parse_as_query(
+            text: str,
+            colorama: Optional[Colorama] = None
+    ) -> Tuple['Query', str]:
+        # Parse text
         dice_num_map = defaultdict(int)
         bias = 0
-        for match in simple_query_regex.finditer(f'+{text}'):
-            direction = int(f'{match.group("posneg")}1')
+        parsed_positions = []
+        for match in simple_query_regex.finditer(text):
+            posneg = match.group('posneg')
+            if posneg is None:
+                direction = 1
+            else:
+                direction = int(f'{posneg}1')
             is_dice = (match.group('d') is not None)
             if is_dice:
                 value = str_to_int_with_default(match.group('value'), default=1)
                 kind = str_to_int_with_default(match.group('dice_kind'), default=6)
                 dice_num_map[kind] += direction * value
             else:
-                value = str_to_int_with_default(match.group('value'), default=0)
+                value_str = match.group('value')
+                if value_str is None:
+                    continue
+                value = int(value_str)
                 bias += direction * value
+            parsed_positions.append((match.start(), match.end(), is_dice))
+
+        # Generate colored text
+        if colorama is not None:
+            parsed_positions = sorted(parsed_positions)
+            result_text = f''
+            last_pos = 0
+            for begin, end, is_dice in parsed_positions:
+                result_text += text[last_pos:begin]
+                if is_dice:
+                    color = Fore.LIGHTBLUE_EX
+                else:
+                    color = Fore.GREEN
+                result_text += f'{color}{text[begin:end]}{Fore.RESET}'
+                last_pos = end
+            result_text += text[last_pos:]
+        else:
+            result_text = text
+
+        # Sanity check
         if any([dice_num <= 0 for dice_kind, dice_num in dice_num_map.items()]):
             raise DiceQueryError('The number of dice cannot be zero!')
         if any([dice_kind <= 0 for dice_kind, dice_num in dice_num_map.items()]):
             raise DiceQueryError('The size of die cannot be zero!')
 
-        return Query(dice_num_map, bias)
+        return Query(dice_num_map, bias), result_text
