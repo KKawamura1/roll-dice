@@ -29,6 +29,10 @@ class Query:
         self._dice_num_map = dice_num_map
         self._bias = bias
 
+    @property
+    def has_dice(self) -> bool:
+        return len(self._dice_num_map) > 0
+
     def roll(self, seed: int = None) -> Result:
         if seed is not None:
             np.random.seed(seed)

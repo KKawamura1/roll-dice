@@ -23,9 +23,12 @@ def main() -> None:
             print(traceback.format_exc())
             continue
         print(f'Query: {parsed_text}')
-        print(f'Dice: {query}')
-        result = query.roll()
-        print(f'Result: {result}')
+        if query.has_dice:
+            print(f'Dice: {query}')
+            result = query.roll()
+            print(f'Result: {result}')
+        else:
+            print(f'Result: {query}')
         print()
 
 
